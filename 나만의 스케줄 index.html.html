@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나만의 스케줄</title>
+  <style>
+    :root {
+      --sky: #8fd3ff;
+      --sky-dark: #3ba8e8;
+      --sky-light: #e9f7ff;
+      --white: #ffffff;
+      --text: #263238;
+      --muted: #718096;
+      --border: #d6ecfa;
+      --success: #42b883;
+      --danger: #ff6b6b;
+      --warning: #ffc857;
+      --shadow: 0 10px 25px rgba(59, 168, 232, 0.15);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #e9f7ff, #ffffff);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .app.app-hidden {
+      display: none;
+    }
+
+    .cover-screen {
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top left, rgba(143, 211, 255, 0.45), transparent 36%),
+        linear-gradient(135deg, #e9f7ff 0%, #ffffff 52%, #dff4ff 100%);
+    }
+
+    .cover-card {
+      width: min(860px, 100%);
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      box-shadow: 0 24px 60px rgba(59, 168, 232, 0.22);
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover-card::before {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(143, 211, 255, 0.32);
+      right: -80px;
+      top: -90px;
+    }
+
+    .cover-layout {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .cover-copy {
+      text-align: left;
+    }
+
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: var(--sky-light);
+      color: var(--sky-dark);
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+    }
+
+    .cover-card h1 {
+      color: var(--sky-dark);
+      font-size: clamp(34px, 6vw, 56px);
+      margin-bottom: 14px;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+
+    .cover-card p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+      margin-bottom: 22px;
+    }
+
+    .cover-calendar {
+      background: #f8fcff;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 16px 35px rgba(59, 168, 232, 0.14);
+    }
+
+    .cover-calendar-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      color: var(--sky-dark);
+      font-weight: 900;
+    }
+
+    .cover-calendar-month {
+      font-size: 20px;
+    }
+
+    .cover-calendar-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .cover-calendar-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--sky);
+    }
+
+    .cover-weekdays,
+    .cover-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 7px;
+    }
+
+    .cover-weekdays span {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      padding: 5px 0;
+    }
+
+    .cover-days span {
+      min-height: 46px;
+      border-radius: 13px;
+      background: var(--white);
+      border: 1px solid #e1f1fb;
+      color: #37505c;
+      font-size: 12px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .cover-days span.blank {
+      background: transparent;
+      border-color: transparent;
+    }
+
+    .cover-days span.today {
+      background: var(--sky-dark);
+      color: white;
+      box-shadow: 0 8px 16px rgba(59, 168, 232, 0.28);
+    }
+
+    .cover-days span.plan::after,
+    .cover-days span.exam::after,
+    .cover-days span.goal::after {
+      content: "";
+      position: absolute;
+      bottom: 7px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .cover-days span.plan::after { background: #4dabf7; }
+    .cover-days span.exam::after { background: #ff922b; }
+    .cover-days span.goal::after { background: #42b883; }
+
+    .cover-legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cover-legend span {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 10px;
+    }
+
+    .start-btn {
+      width: min(280px, 100%);
+      padding: 16px 22px;
+      border-radius: 18px;
+      background: var(--sky-dark);
+      color: white;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 12px 24px rgba(59, 168, 232, 0.25);
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      opacity: 0.94;
+    }
+
+    .cover-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 740px) {
+      .cover-screen {
+        padding: 16px;
+      }
+
+      .cover-card {
+        padding: 24px 18px;
+        border-radius: 24px;
+      }
+
+      .cover-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .cover-copy {
+        text-align: center;
+      }
+
+      .cover-card p {
+        font-size: 14px;
+      }
+
+      .cover-days span {
+        min-height: 38px;
+      }
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      background: var(--white);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .title-area h1 {
+      font-size: 28px;
+      color: var(--sky-dark);
+      margin-bottom: 6px;
+    }
+
+    .title-area p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 11px 15px;
+      border-radius: 12px;
+      background: var(--sky-dark);
+      color: white;
+      font-weight: 700;
+      transition: 0.2s;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .btn.secondary {
+      background: var(--sky-light);
+      color: var(--sky-dark);
+      border: 1px solid var(--border);
+    }
+
+    .btn.danger {
+      background: var(--danger);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: var(--sky-light);
+      padding: 8px;
+      border-radius: 15px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 90px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      color: var(--sky-dark);
+      background: transparent;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--white);
+      box-shadow: 0 4px 12px rgba(59, 168, 232, 0.15);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 10px;
+    }
+
+    .calendar-header h2 {
+      color: var(--sky-dark);
+      font-size: 22px;
+      text-align: center;
+    }
+
+    .calendar-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--sky-light);
+      color: var(--sky-dark);
+      font-size: 18px;
+      font-weight: 900;
+      border: 1px solid var(--border);
+    }
+
+    .weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .weekday {
+      text-align: center;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      padding: 8px 0;
+    }
+
+    .day {
+      min-height: 105px;
+      background: #f8fcff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: 0.2s;
+    }
+
+    .day:hover {
+      background: var(--sky-light);
+    }
+
+    .day.other-month {
+      opacity: 0.35;
+    }
+
+    .day.today {
+      border: 2px solid var(--sky-dark);
+      background: #eef9ff;
+    }
+
+    .day-number {
+      font-weight: 900;
+      color: var(--sky-dark);
+      font-size: 13px;
+    }
+
+    .event-chip {
+      font-size: 11px;
+      padding: 5px 7px;
+      border-radius: 999px;
+      color: white;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .event-study { background: #4dabf7; }
+    .event-assignment { background: #ff922b; }
+    .event-exam { background: #f03e3e; }
+    .event-personal { background: #845ef7; }
+    .event-etc { background: #20c997; }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    label {
+      font-weight: 800;
+      color: #37505c;
+      font-size: 14px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 13px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fbfdff;
+      outline: none;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--sky-dark);
+      box-shadow: 0 0 0 3px rgba(59, 168, 232, 0.12);
+    }
+
+    .side-section {
+      margin-bottom: 18px;
+    }
+
+    .side-section h3 {
+      color: var(--sky-dark);
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      padding: 13px;
+      border-radius: 14px;
+      background: #f8fcff;
+      border: 1px solid var(--border);
+      display: grid;
+      gap: 6px;
+    }
+
+    .list-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .list-title {
+      font-weight: 900;
+      word-break: break-word;
+    }
+
+    .list-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .delete-btn {
+      background: #ffe3e3;
+      color: var(--danger);
+      border-radius: 9px;
+      padding: 6px 9px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .goal-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .goal-check {
+      width: 24px;
+      height: 24px;
+      accent-color: var(--success);
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .goal-completed .goal-text {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      background: var(--sky-light);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--sky-dark);
+      font-size: 22px;
+      margin-bottom: 3px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .streak-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .streak-day {
+      padding: 10px 6px;
+      text-align: center;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f8fcff;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .streak-day.done {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 40, 50, 0.35);
+      z-index: 20;
+      padding: 20px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: white;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-header h2 {
+      color: var(--sky-dark);
+    }
+
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--sky-light);
+      color: var(--sky-dark);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 20px 10px;
+      background: #f8fcff;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      font-size: 14px;
+    }
+
+    .mobile-add {
+      display: none;
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 10;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: var(--sky-dark);
+      color: white;
+      font-size: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .header-actions .btn {
+        flex: 1;
+      }
+
+      .day {
+        min-height: 90px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 14px;
+      }
+
+      header {
+        padding: 17px;
+        margin-bottom: 14px;
+      }
+
+      .title-area h1 {
+        font-size: 23px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .calendar-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .calendar-controls {
+        justify-content: center;
+      }
+
+      .weekdays,
+      .calendar-grid {
+        gap: 5px;
+      }
+
+      .weekday {
+        font-size: 11px;
+      }
+
+      .day {
+        min-height: 76px;
+        padding: 5px;
+        border-radius: 10px;
+      }
+
+      .day-number {
+        font-size: 11px;
+      }
+
+      .event-chip {
+        font-size: 9px;
+        padding: 4px 5px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .streak-days {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .mobile-add {
+        display: block;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .tabs {
+        padding: 6px;
+      }
+
+      .tab-btn {
+        font-size: 13px;
+        min-width: 80px;
+      }
+
+      .day {
+        min-height: 64px;
+      }
+
+      .event-chip:nth-of-type(n+3) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title-area">
+        <h1 id="appTitle">나만의 스케줄</h1>
+        <p>대학생을 위한 일정·계획·목표 관리 웹앱</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="openModal('scheduleModal')">일정 추가</button>
+        <button class="btn secondary" onclick="openModal('settingsModal')">설정</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('calendar', this)">달력</button>
+          <button class="tab-btn" onclick="switchTab('plans', this)">계획</button>
+          <button class="tab-btn" onclick="switchTab('goals', this)">목표</button>
+          <button class="tab-btn" onclick="switchTab('streak', this)">실천 체크</button>
+        </div>
+
+        <div id="calendar" class="tab-content active">
+          <div class="calendar-header">
+            <button class="icon-btn" onclick="changeMonth(-1)">‹</button>
+            <h2 id="monthTitle"></h2>
+            <button class="icon-btn" onclick="changeMonth(1)">›</button>
+          </div>
+
+          <div class="weekdays">
+            <div class="weekday">일</div>
+            <div class="weekday">월</div>
+            <div class="weekday">화</div>
+            <div class="weekday">수</div>
+            <div class="weekday">목</div>
+            <div class="weekday">금</div>
+            <div class="weekday">토</div>
+          </div>
+
+          <div id="calendarGrid" class="calendar-grid"></div>
+        </div>
+
+        <div id="plans" class="tab-content">
+          <div class="side-section">
+            <h3>계획 설정</h3>
+            <div class="form-grid">
+              <div class="form-row">
+                <label for="planTitle">계획 제목</label>
+                <input id="planTitle" type="text" placeholder="예: 중간고사 공부 계획" />
+              </div>
+              <div class="form-row">
+                <label for="planDetail">계획 내용</label>
+                <textarea id="planDetail" placeholder="계획을 자세히 적어보세요."></textarea>
+              </div>
+              <div class="form-row">
+                <label for="planDate">계획 날짜</label>
+                <input id="planDate" type="date" />
+              </div>
+              <button class="btn" onclick="addPlan()">계획 추가</button>
+            </div>
+          </div>
+
+          <div class="side-section">
+            <h3>내 계획 목록</h3>
+            <div id="planList" class="list"></div>
+          </div>
+        </div>
+
+        <div id="goals" class="tab-content">
+          <div class="side-section">
+            <h3>목표 설정</h3>
+            <div class="form-grid">
+              <div class="form-row">
+                <label for="goalInput">목표</label>
+                <input id="goalInput" type="text" placeholder="예: 매일 2시간 전공 공부하기" />
+              </div>
+              <button class="btn" onclick="addGoal()">목표 추가</button>
+            </div>
+          </div>
+
+          <div class="side-section">
+            <h3>목표 목록</h3>
+            <div id="goalList" class="list"></div>
+          </div>
+        </div>
+
+        <div id="streak" class="tab-content">
+          <div class="side-section">
+            <h3>실천 기록</h3>
+            <div class="stats">
+              <div class="stat">
+                <strong id="totalDone">0</strong>
+                <span>총 실천일</span>
+              </div>
+              <div class="stat">
+                <strong id="currentStreak">0</strong>
+                <span>연속 실천일</span>
+              </div>
+              <div class="stat">
+                <strong id="goalDoneRate">0%</strong>
+                <span>목표 완료율</span>
+              </div>
+            </div>
+
+            <button class="btn" onclick="toggleTodayStreak()">오늘 실천 체크 / 해제</button>
+          </div>
+
+          <div class="side-section">
+            <h3>최근 7일</h3>
+            <div id="streakDays" class="streak-days"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="side-section">
+          <h3>오늘 일정</h3>
+          <div id="todaySchedule" class="list"></div>
+        </div>
+
+        <div class="side-section">
+          <h3>다가오는 일정</h3>
+          <div id="upcomingSchedule" class="list"></div>
+        </div>
+
+        <div class="side-section">
+          <h3>빠른 목표</h3>
+          <div id="quickGoals" class="list"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <button class="mobile-add" onclick="openModal('scheduleModal')">+</button>
+
+  <div id="scheduleModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>일정 추가</h2>
+        <button class="close-btn" onclick="closeModal('scheduleModal')">×</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="scheduleTitle">일정 제목</label>
+          <input id="scheduleTitle" type="text" placeholder="예: 과제 제출, 동아리 회의" />
+        </div>
+
+        <div class="form-row">
+          <label for="scheduleDate">날짜</label>
+          <input id="scheduleDate" type="date" />
+        </div>
+
+        <div class="form-row">
+          <label for="scheduleTime">시간</label>
+          <input id="scheduleTime" type="time" />
+        </div>
+
+        <div class="form-row">
+          <label for="scheduleCategory">구분</label>
+          <select id="scheduleCategory">
+            <option value="study">공부</option>
+            <option value="assignment">과제</option>
+            <option value="exam">시험</option>
+            <option value="personal">개인</option>
+            <option value="etc">기타</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="scheduleMemo">메모</label>
+          <textarea id="scheduleMemo" placeholder="필요한 내용을 적어보세요."></textarea>
+        </div>
+
+        <button class="btn" onclick="addSchedule()">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>사용자 설정</h2>
+        <button class="close-btn" onclick="closeModal('settingsModal')">×</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="userName">이름 또는 닉네임</label>
+          <input id="userName" type="text" placeholder="예: 민지" />
+        </div>
+
+        <div class="form-row">
+          <label for="mainColor">대표 색상</label>
+          <select id="mainColor">
+            <option value="#3ba8e8">하늘색</option>
+            <option value="#4dabf7">파란색</option>
+            <option value="#20c997">민트색</option>
+            <option value="#845ef7">보라색</option>
+            <option value="#ff922b">주황색</option>
+          </select>
+        </div>
+
+        <button class="btn" onclick="saveSettings()">설정 저장</button>
+        <button class="btn danger" onclick="resetAllData()">전체 데이터 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "myStudentScheduleApp";
+
+    let state = {
+      schedules: [],
+      plans: [],
+      goals: [],
+      streaks: [],
+      settings: {
+        userName: "",
+        mainColor: "#3ba8e8"
+      }
+    };
+
+    let currentDate = new Date();
+
+    const categoryNames = {
+      study: "공부",
+      assignment: "과제",
+      exam: "시험",
+      personal: "개인",
+      etc: "기타"
+    };
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = JSON.parse(saved);
+      }
+    }
+
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function todayString() {
+      return formatDate(new Date());
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("active");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("active");
+    }
+
+    function switchTab(tabId, button) {
+      document.querySelectorAll(".tab-content").forEach(tab => {
+        tab.classList.remove("active");
+      });
+
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.remove("active");
+      });
+
+      document.getElementById(tabId).classList.add("active");
+      button.classList.add("active");
+
+      if (tabId === "streak") {
+        renderStreak();
+      }
+    }
+
+    function changeMonth(amount) {
+      currentDate.setMonth(currentDate.getMonth() + amount);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      document.getElementById("monthTitle").textContent = `${year}년 ${month + 1}월`;
+
+      const firstDay = new Date(year, month, 1);
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+      const grid = document.getElementById("calendarGrid");
+      grid.innerHTML = "";
+
+      for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+
+        const dateStr = formatDate(date);
+        const dayEl = document.createElement("div");
+        dayEl.className = "day";
+
+        if (date.getMonth() !== month) {
+          dayEl.classList.add("other-month");
+        }
+
+        if (dateStr === todayString()) {
+          dayEl.classList.add("today");
+        }
+
+        const number = document.createElement("div");
+        number.className = "day-number";
+        number.textContent = date.getDate();
+        dayEl.appendChild(number);
+
+        const daySchedules = state.schedules
+          .filter(item => item.date === dateStr)
+          .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+        daySchedules.slice(0, 3).forEach(item => {
+          const chip = document.createElement("div");
+          chip.className = `event-chip event-${item.category}`;
+          chip.textContent = `${item.time ? item.time + " " : ""}${item.title}`;
+          chip.title = item.title;
+          dayEl.appendChild(chip);
+        });
+
+        if (daySchedules.length > 3) {
+          const more = document.createElement("div");
+          more.className = "event-chip event-etc";
+          more.textContent = `+${daySchedules.length - 3}개 더`;
+          dayEl.appendChild(more);
+        }
+
+        dayEl.addEventListener("click", () => {
+          document.getElementById("scheduleDate").value = dateStr;
+          openModal("scheduleModal");
+        });
+
+        grid.appendChild(dayEl);
+      }
+    }
+
+    function addSchedule() {
+      const title = document.getElementById("scheduleTitle").value.trim();
+      const date = document.getElementById("scheduleDate").value;
+      const time = document.getElementById("scheduleTime").value;
+      const category = document.getElementById("scheduleCategory").value;
+      const memo = document.getElementById("scheduleMemo").value.trim();
+
+      if (!title || !date) {
+        alert("일정 제목과 날짜를 입력해주세요.");
+        return;
+      }
+
+      state.schedules.push({
+        id: Date.now(),
+        title,
+        date,
+        time,
+        category,
+        memo
+      });
+
+      saveState();
+
+      document.getElementById("scheduleTitle").value = "";
+      document.getElementById("scheduleDate").value = "";
+      document.getElementById("scheduleTime").value = "";
+      document.getElementById("scheduleCategory").value = "study";
+      document.getElementById("scheduleMemo").value = "";
+
+      closeModal("scheduleModal");
+      renderAll();
+    }
+
+    function deleteSchedule(id) {
+      state.schedules = state.schedules.filter(item => item.id !== id);
+      saveState();
+      renderAll();
+    }
+
+    function addPlan() {
+      const title = document.getElementById("planTitle").value.trim();
+      const detail = document.getElementById("planDetail").value.trim();
+      const date = document.getElementById("planDate").value;
+
+      if (!title) {
+        alert("계획 제목을 입력해주세요.");
+        return;
+      }
+
+      state.plans.push({
+        id: Date.now(),
+        title,
+        detail,
+        date
+      });
+
+      saveState();
+
+      document.getElementById("planTitle").value = "";
+      document.getElementById("planDetail").value = "";
+      document.getElementById("planDate").value = "";
+
+      renderPlans();
+    }
+
+    function deletePlan(id) {
+      state.plans = state.plans.filter(item => item.id !== id);
+      saveState();
+      renderPlans();
+    }
+
+    function addGoal() {
+      const text = document.getElementById("goalInput").value.trim();
+
+      if (!text) {
+        alert("목표를 입력해주세요.");
+        return;
+      }
+
+      state.goals.push({
+        id: Date.now(),
+        text,
+        completed: false
+      });
+
+      saveState();
+      document.getElementById("goalInput").value = "";
+      renderGoals();
+      renderQuickGoals();
+      renderStreak();
+    }
+
+    function toggleGoal(id) {
+      state.goals = state.goals.map(goal => {
+        if (goal.id === id) {
+          return { ...goal, completed: !goal.completed };
+        }
+        return goal;
+      });
+
+      saveState();
+      renderGoals();
+      renderQuickGoals();
+      renderStreak();
+    }
+
+    function deleteGoal(id) {
+      state.goals = state.goals.filter(goal => goal.id !== id);
+      saveState();
+      renderGoals();
+      renderQuickGoals();
+      renderStreak();
+    }
+
+    function renderPlans() {
+      const list = document.getElementById("planList");
+      list.innerHTML = "";
+
+      if (state.plans.length === 0) {
+        list.innerHTML = `<div class="empty">아직 등록된 계획이 없습니다.</div>`;
+        return;
+      }
+
+      const sorted = [...state.plans].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
+      sorted.forEach(plan => {
+        const item = document.createElement("div");
+        item.className = "list-item";
+        item.innerHTML = `
+          <div class="list-item-top">
+            <div>
+              <div class="list-title">${escapeHtml(plan.title)}</div>
+              <div class="list-meta">${plan.date ? plan.date : "날짜 미정"}</div>
+            </div>
+            <button class="delete-btn" onclick="deletePlan(${plan.id})">삭제</button>
+          </div>
+          ${plan.detail ? `<div class="list-meta">${escapeHtml(plan.detail)}</div>` : ""}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderGoals() {
+      const list = document.getElementById("goalList");
+      list.innerHTML = "";
+
+      if (state.goals.length === 0) {
+        list.innerHTML = `<div class="empty">아직 등록된 목표가 없습니다.</div>`;
+        return;
+      }
+
+      state.goals.forEach(goal => {
+        const item = document.createElement("div");
+        item.className = `list-item goal-item ${goal.completed ? "goal-completed" : ""}`;
+        item.innerHTML = `
+          <input class="goal-check" type="checkbox" ${goal.completed ? "checked" : ""} onchange="toggleGoal(${goal.id})" />
+          <div style="flex:1;">
+            <div class="list-item-top">
+              <div class="goal-text list-title">${escapeHtml(goal.text)}</div>
+              <button class="delete-btn" onclick="deleteGoal(${goal.id})">삭제</button>
+            </div>
+            <div class="list-meta">${goal.completed ? "완료됨" : "진행 중"}</div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderQuickGoals() {
+      const list = document.getElementById("quickGoals");
+      list.innerHTML = "";
+
+      const activeGoals = state.goals.filter(goal => !goal.completed).slice(0, 3);
+
+      if (activeGoals.length === 0) {
+        list.innerHTML = `<div class="empty">진행 중인 목표가 없습니다.</div>`;
+        return;
+      }
+
+      activeGoals.forEach(goal => {
+        const item = document.createElement("div");
+        item.className = "list-item";
+        item.innerHTML = `
+          <div class="list-item-top">
+            <div class="list-title">${escapeHtml(goal.text)}</div>
+            <button class="delete-btn" onclick="toggleGoal(${goal.id})">완료</button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderSideSchedules() {
+      const todayList = document.getElementById("todaySchedule");
+      const upcomingList = document.getElementById("upcomingSchedule");
+
+      todayList.innerHTML = "";
+      upcomingList.innerHTML = "";
+
+      const today = todayString();
+
+      const todayItems = state.schedules
+        .filter(item => item.date === today)
+        .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+      const upcomingItems = state.schedules
+        .filter(item => item.date > today)
+        .sort((a, b) => {
+          const dateCompare = a.date.localeCompare(b.date);
+          if (dateCompare !== 0) return dateCompare;
+          return (a.time || "").localeCompare(b.time || "");
+        })
+        .slice(0, 5);
+
+      renderScheduleList(todayList, todayItems, "오늘 등록된 일정이 없습니다.");
+      renderScheduleList(upcomingList, upcomingItems, "다가오는 일정이 없습니다.");
+    }
+
+    function renderScheduleList(container, items, emptyText) {
+      if (items.length === 0) {
+        container.innerHTML = `<div class="empty">${emptyText}</div>`;
+        return;
+      }
+
+      items.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "list-item";
+        el.innerHTML = `
+          <div class="list-item-top">
+            <div>
+              <div class="list-title">${escapeHtml(item.title)}</div>
+              <div class="list-meta">
+                ${item.date} ${item.time ? "· " + item.time : ""}<br />
+                ${categoryNames[item.category] || "기타"}
+              </div>
+            </div>
+            <button class="delete-btn" onclick="deleteSchedule(${item.id})">삭제</button>
+          </div>
+          ${item.memo ? `<div class="list-meta">${escapeHtml(item.memo)}</div>` : ""}
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    function toggleTodayStreak() {
+      const today = todayString();
+
+      if (state.streaks.includes(today)) {
+        state.streaks = state.streaks.filter(day => day !== today);
+      } else {
+        state.streaks.push(today);
+      }
+
+      saveState();
+      renderStreak();
+    }
+
+    function renderStreak() {
+      const uniqueStreaks = [...new Set(state.streaks)].sort();
+      state.streaks = uniqueStreaks;
+
+      document.getElementById("totalDone").textContent = uniqueStreaks.length;
+      document.getElementById("currentStreak").textContent = calculateCurrentStreak();
+
+      const totalGoals = state.goals.length;
+      const doneGoals = state.goals.filter(goal => goal.completed).length;
+      const rate = totalGoals === 0 ? 0 : Math.round((doneGoals / totalGoals) * 100);
+      document.getElementById("goalDoneRate").textContent = `${rate}%`;
+
+      const container = document.getElementById("streakDays");
+      container.innerHTML = "";
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+
+        const dateStr = formatDate(date);
+        const day = document.createElement("div");
+        day.className = `streak-day ${state.streaks.includes(dateStr) ? "done" : ""}`;
+
+        const label = i === 0 ? "오늘" : `${date.getMonth() + 1}/${date.getDate()}`;
+        day.innerHTML = `${label}<br>${state.streaks.includes(dateStr) ? "완료" : "-"}`;
+
+        container.appendChild(day);
+      }
+    }
+
+    function calculateCurrentStreak() {
+      let count = 0;
+      const streakSet = new Set(state.streaks);
+      const date = new Date();
+
+      while (true) {
+        const dateStr = formatDate(date);
+
+        if (streakSet.has(dateStr)) {
+          count++;
+          date.setDate(date.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      return count;
+    }
+
+    function saveSettings() {
+      const userName = document.getElementById("userName").value.trim();
+      const mainColor = document.getElementById("mainColor").value;
+
+      state.settings.userName = userName;
+      state.settings.mainColor = mainColor;
+
+      saveState();
+      applySettings();
+      closeModal("settingsModal");
+    }
+
+    function applySettings() {
+      const color = state.settings.mainColor || "#3ba8e8";
+      document.documentElement.style.setProperty("--sky-dark", color);
+
+      const title = document.getElementById("appTitle");
+      if (state.settings.userName) {
+        title.textContent = `${state.settings.userName}의 스케줄`;
+      } else {
+        title.textContent = "나만의 스케줄";
+      }
+
+      document.getElementById("userName").value = state.settings.userName || "";
+      document.getElementById("mainColor").value = color;
+    }
+
+    function resetAllData() {
+      const ok = confirm("정말 모든 일정, 계획, 목표, 실천 기록을 삭제할까요?");
+      if (!ok) return;
+
+      localStorage.removeItem(STORAGE_KEY);
+
+      state = {
+        schedules: [],
+        plans: [],
+        goals: [],
+        streaks: [],
+        settings: {
+          userName: "",
+          mainColor: "#3ba8e8"
+        }
+      };
+
+      currentDate = new Date();
+      applySettings();
+      renderAll();
+      closeModal("settingsModal");
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderAll() {
+      renderCalendar();
+      renderPlans();
+      renderGoals();
+      renderQuickGoals();
+      renderSideSchedules();
+      renderStreak();
+    }
+
+    document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+      backdrop.addEventListener("click", event => {
+        if (event.target === backdrop) {
+          backdrop.classList.remove("active");
+        }
+      });
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        document.querySelectorAll(".modal-backdrop").forEach(modal => {
+          modal.classList.remove("active");
+        });
+      }
+    });
+
+
+    function showCoverScreen() {
+      const app = document.querySelector(".app");
+      if (!app) return;
+
+      app.classList.add("app-hidden");
+
+      const cover = document.createElement("section");
+      cover.className = "cover-screen";
+      cover.id = "coverScreen";
+      cover.innerHTML = `
+        <div class="cover-card">
+          <div class="cover-layout">
+            <div class="cover-copy">
+              <div class="cover-badge">☁️ 대학생 맞춤 스케줄러</div>
+              <h1>나만의<br />스케줄</h1>
+              <p>
+                회원가입 없이 바로 시작해 강의, 과제, 시험, 개인 일정과 목표를
+                달력처럼 한눈에 정리해 보세요.
+              </p>
+              <button class="start-btn" type="button" id="startAppBtn">시작하기</button>
+              <div class="cover-note">PC · 태블릿 · 스마트폰에서 모두 사용할 수 있어요.</div>
+            </div>
+            <div class="cover-calendar" aria-hidden="true">
+              <div class="cover-calendar-top">
+                <div class="cover-calendar-month">이번 달 스케줄</div>
+                <div class="cover-calendar-dots"><span></span><span></span><span></span></div>
+              </div>
+              <div class="cover-weekdays">
+                <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
+              </div>
+              <div class="cover-days">
+                <span class="blank"></span><span>1</span><span>2</span><span class="plan">3</span><span>4</span><span>5</span><span>6</span>
+                <span>7</span><span class="exam">8</span><span>9</span><span>10</span><span class="goal">11</span><span>12</span><span>13</span>
+                <span>14</span><span>15</span><span class="today">16</span><span>17</span><span class="plan">18</span><span>19</span><span>20</span>
+                <span>21</span><span>22</span><span>23</span><span class="goal">24</span><span>25</span><span>26</span><span>27</span>
+              </div>
+              <div class="cover-legend">
+                <span>파란 점: 일정</span>
+                <span>주황 점: 시험·과제</span>
+                <span>초록 점: 목표</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertBefore(cover, app);
+
+      document.getElementById("startAppBtn").addEventListener("click", () => {
+        cover.remove();
+        app.classList.remove("app-hidden");
+      });
+    }
+    function initDefaultDates() {
+      const today = todayString();
+      document.getElementById("scheduleDate").value = today;
+      document.getElementById("planDate").value = today;
+    }
+
+    showCoverScreen();
+    loadState();
+    applySettings();
+    initDefaultDates();
+    renderAll();
+  </script>
+</body>
+</html>
